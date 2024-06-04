@@ -6,7 +6,7 @@ import cv2
 from find_features import pts1, pts2 
 
 # find fundamental matrix 8 points algorithm
-def find_fundamental_matrix(pts1, pts2, camera_matrix1, camera_matrix2, essential_matrix):
+def find_fundamental_matrix(pts1, pts2):
     '''
     xn'.T(F)xn = 0, where n = 1, ..., n
     0. (Normalize points)
@@ -19,20 +19,27 @@ def find_fundamental_matrix(pts1, pts2, camera_matrix1, camera_matrix2, essentia
     pts_idx = [0,1,2,3,4,5,6,7,8,9,10]
     f1,f2,f3,f4,f5,f6,f7,f8,f9 = int, int, int, int, int, int, int, int, int
 
-    pts1_homogeneous = pts1[:][pts_idx[1]]
-    pts2_homogeneous = pts2[:][pts_idx[1]]
+    pts1_x, pts1_y = pts1[0], pts1[1]
+    pts2_x, pts2_y = pts2[0], pts2[1]
 
     # homogenous linear system, AX = 0, if we choose 8 points hence pts_idex = 1, ..., 8
     # Total least squares -> minimize ||Ax||^2, subject to ||x||^2 = 1, USE SVD!
-    A = [[pts1[0][pts_idx]*pts2[0][pts_idx], pts1[0][pts_idx]*pts2[1][pts_idx], "lanjut sampe 9 term"]]
+
+    # to save computation, i write the terms manually
+    A = np.array([
+            pts1_x[pts_idx]*pts2_x[pts_idx], pts1_x[pts_idx]*pts2_y[pts_idx], pts1_x,
+            pts1_y[pts_idx]*pts2_x[pts_idx], pts1_y[pts_idx]*pts2_y[pts_idx], pts1_y,
+            pts2_x[pts_idx], pts2_y[pts_idx], 1
+        ])
     X = [f1, f2, f3, f4, f5, f6, f7, f8, f9]
+
 
     # epipole
     # Fe = 0, if the epipole in the right null space of F
     
     # with F known, then we can calculate K, R and t
     # F = K'^-T [tx] R K^-1
-    
+
 
 
 def camera_matrix():
