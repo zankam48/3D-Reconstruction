@@ -47,7 +47,7 @@ def find_fundamental_matrix_gem(pts1, pts2):
     def normalized_pts(pts):
         x = pts[0]
         y = pts[1]
-        centroid = np.mean(pts, axis=1)
+        centroid = np.mean(pts[:2], axis=1)
         cx = x - centroid[0]
         cy = y - centroid[1]
         dist = np.sqrt(np.power(cx, 2) + np.power(cy, 2))
@@ -67,7 +67,7 @@ def find_fundamental_matrix_gem(pts1, pts2):
     for i in range(8):
         x1, y1 = pts1_normalized[0][i], pts1_normalized[1][i]
         x2, y2 = pts2_normalized[0][i], pts2_normalized[1][i]
-        A[i] = np.array([x2*x1, x1*y2, x1, y1*x2, y2*y1, y1, x2, y2, 1]).T
+        A[i] = np.array([x2*x1, x1*y2, x1, y1*x2, y2*y1, y1, x2, y2, 1])
     
     U, S, V = np.linalg.svd(A)
     F = V[-1].reshape(3,3)
@@ -75,91 +75,9 @@ def find_fundamental_matrix_gem(pts1, pts2):
     U, S, V = np.linalg.svd(F)
     S[-1] = 0
     F = np.dot(U, np.dot(np.diag(S), V))
-
-    return F
-
-# alyssa reconstruction
-
-def correspondence_matrix(p1, p2):
-    p1x, p1y = p1[:2]
-    p2x, p2y = p2[:2]
-
-    return np.array([
-        p1x * p2x, p1x * p2y, p1x,
-        p1y * p2x, p1y * p2y, p1y,
-        p2x, p2y, np.ones(len(p1x))
-    ]).T
-
-
-def compute_image_to_image_matrix(x1, x2, compute_essential=False):
-    """ Compute the fundamental or essential matrix from corresponding points
-        (x1, x2 3*n arrays) using the 8 point algorithm.
-        Each row in the A matrix below is constructed as
-        [x'*x, x'*y, x', y'*x, y'*y, y', x, y, 1]
-    """
-    A = correspondence_matrix(x1, x2)
-    # compute linear least square solution
-    U, S, V = np.linalg.svd(A)
-    F = V[-1].reshape(3, 3)
-
-    # constrain F. Make rank 2 by zeroing out last singular value
-    U, S, V = np.linalg.svd(F)
-    S[-1] = 0
-    if compute_essential:
-        S = [1, 1, 0] # Force rank 2 and equal eigenvalues
-    F = np.dot(U, np.dot(np.diag(S), V))
-
-    return F
-
-
-def scale_and_translate_points(points):
-    """ Scale and translate image points so that centroid of the points
-        are at the origin and avg distance to the origin is equal to sqrt(2).
-    :param points: array of homogenous point (3 x n)
-    :returns: array of same input shape and its normalization matrix
-    """
-    x = points[0]
-    y = points[1]
-    center = points.mean(axis=1)  # mean of each row
-    cx = x - center[0] # center the points
-    cy = y - center[1]
-    dist = np.sqrt(np.power(cx, 2) + np.power(cy, 2))
-    scale = np.sqrt(2) / dist.mean()
-    norm3d = np.array([
-        [scale, 0, -scale * center[0]],
-        [0, scale, -scale * center[1]],
-        [0, 0, 1]
-    ])
-
-    return np.dot(norm3d, points), norm3d
-
-
-def compute_normalized_image_to_image_matrix(p1, p2, compute_essential=False):
-    """ Computes the fundamental or essential matrix from corresponding points
-        using the normalized 8 point algorithm.
-    :input p1, p2: corresponding points with shape 3 x n
-    :returns: fundamental or essential matrix with shape 3 x 3
-    """
-    n = p1.shape[1]
-    if p2.shape[1] != n:
-        raise ValueError('Number of points do not match.')
-
-    # preprocess image coordinates
-    p1n, T1 = scale_and_translate_points(p1)
-    p2n, T2 = scale_and_translate_points(p2)
-
-    # compute F or E with the coordinates
-    F = compute_image_to_image_matrix(p1n, p2n, compute_essential)
-
-    # reverse preprocessing of coordinates
-    # We know that P1' E P2 = 0
     F = np.dot(T1.T, np.dot(F, T2))
 
-    return F / F[2, 2]
-
-
-def compute_fundamental_normalized(p1, p2):
-    return compute_normalized_image_to_image_matrix(p1, p2)
+    return F / F[2,2]
 
 
 # gua
@@ -200,44 +118,19 @@ def find_essential_matrix(pts1, pts2):
 def intrinsic_matrix():
     pass
 
-pts1 = np.array([
-    [100, 150],
-    [120, 170],
-    [130, 200],
-    [150, 250],
-    [180, 230],
-    [200, 260],
-    [220, 270],
-    [240, 300]
-])
 
 pts1_riil = np.array([
-                        [100, 120, 130, 150, 180, 200, 220, 240, 260, 280],
-                        [150, 170, 200, 250, 230, 260, 270, 300, 340, 360],
-                        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+                        [100, 120, 130, 150, 180, 200, 220, 240, ],
+                        [150, 170, 200, 250, 230, 260, 270, 300, ],
+                        [1, 1, 1, 1, 1, 1, 1, 1, ]
                      ])
 
 pts2_riil = np.array([
-                        [102, 122, 132, 152, 182, 202, 222, 242, 252, 267],
-                        [148, 168, 198, 248, 228, 258, 268, 298, 318, 325],
-                        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]   
+                        [102, 122, 132, 152, 182, 202, 222, 242, ],
+                        [148, 168, 198, 248, 228, 258, 268, 298, ],
+                        [1, 1, 1, 1, 1, 1, 1, 1, ]   
                     ])
-
-pts2 = np.array([
-    [102, 148],
-    [122, 168],
-    [132, 198],
-    [152, 248],
-    [182, 228],
-    [202, 258],
-    [222, 268],
-    [242, 298]
-])
 
 F = find_fundamental_matrix_gem(pts1_riil, pts2_riil)
 print(F)
 print(np.sum(F))
-
-Fa = compute_fundamental_normalized(pts1_riil, pts2_riil)
-print(Fa)
-print(np.sum(Fa))
