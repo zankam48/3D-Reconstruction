@@ -58,48 +58,6 @@ class F_E_Matrix():
     def find_essential_matrix(self):
         return self.F_E_matrix(essential=True)
 
-
-
-def find_fundamental_matrix(pts1, pts2):
-    pts1 = np.asarray(pts1)
-    pts2 = np.asarray(pts2)
-
-    def normalized_pts(pts):
-        x = pts[0]
-        y = pts[1]
-        centroid = np.mean(pts[:2], axis=1)
-        cx = x - centroid[0]
-        cy = y - centroid[1]
-        dist = np.sqrt(np.power(cx, 2) + np.power(cy, 2))
-        scale = np.sqrt(2) / np.mean(dist)
-        T = np.array([
-            [scale, 0, -scale * centroid[0]],
-            [0, scale, -scale * centroid[1]],
-            [0, 0, 1]
-        ])
-        pts_normalized = np.dot(T, pts)
-        return T, pts_normalized
-    
-    T1, pts1_normalized = normalized_pts(pts1)
-    T2, pts2_normalized = normalized_pts(pts2)
-
-    A = np.zeros((8, 9))
-    for i in range(8):
-        x1, y1 = pts1_normalized[0][i], pts1_normalized[1][i]
-        x2, y2 = pts2_normalized[0][i], pts2_normalized[1][i]
-        A[i] = np.array([x2*x1, x1*y2, x1, y1*x2, y2*y1, y1, x2, y2, 1])
-    
-    U, S, V = np.linalg.svd(A)
-    F = V[-1].reshape(3,3)
-
-    U, S, V = np.linalg.svd(F)
-    S[-1] = 0
-    F = np.dot(U, np.dot(np.diag(S), V))
-    F = np.dot(T1.T, np.dot(F, T2))
-
-    return F / F[2,2]
-
-
 # gua
 def camera_matrix():
     X, Y, Z = int, int, int
